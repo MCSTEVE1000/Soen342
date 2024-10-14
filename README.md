@@ -4,6 +4,6 @@ Soen 342 project
 ## Team Members
 Section H
 
-Steven Gourgy, 40213440
+Steven Gourgy, 40213440         Email:stevengourgy@hotmail.com
 
-Harun Slahaldin Omar, 40250981
+Harun Slahaldin Omar, 40250981  Email:harunager@outlook.com
