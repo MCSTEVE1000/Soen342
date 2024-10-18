@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <title>Register Instructor</title>
+</head>
+<body>
+    <header>
+        <h1>Register Instructor</h1>
+    </header>
+    
+    <main>
+        <form method="POST">
+            {% csrf_token %}
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+            
+            <label for="phone">Phone:</label>
+            <input type="text" id="phone" name="phone" required>
+            
+            <label for="specialization">Specialization:</label>
+            <input type="text" id="specialization" name="specialization" required>
+            
+            <label for="cities">Cities:</label>
+            <input type="text" id="cities" name="cities" required>
+            
+            <button type="submit">Register</button>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Your Organization Name</p>
+    </footer>
+</body>
+</html>
