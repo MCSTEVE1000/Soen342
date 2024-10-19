@@ -1,0 +1,68 @@
+System operations:
+createInstructorAccount()
+createOffering()
+updateAvailability()
+chooseOffering()
+createLesson()
+deleteUser()
+
+Contract CO1: createOffering
+Operation: createOffering(space, span, lesson)
+Cross-References: Use Case: Enter offerings
+Preconditions: 
+1. A Lesson instance already exists
+2. A Space instance already exists
+3. Instance space is available for the span
+4. An offering creation is underway
+Postconditions:
+1. An Offering instance has been created (Instance creation)
+2. Instance offering has been associated with space (Association formation)
+3. Instance offering has been associated with lesson (Association formation)
+4. Instance space has had its availabilty updated (Instance update)
+5. Offering has been made invisible to clients (Instance update)
+
+Contract CO2: createInstructorAccount
+Operation: createInstructorAccount(name, phoneNumber, specialty)
+Cross-references: Use Case: Register instructor
+Preconditions: Instructor registration is underway
+Postconditions: An Instructor instance has been created (Instance creation)
+
+Contract CO3: createLesson
+Operation: createLesson(type, target)
+Cross-reference: Use case: Enter offerings
+Preconditions: An offering creation is underway
+Postconditions: A Lesson instance has been created (Instance creation)
+
+Contract CO4: chooseOffering
+Operation: chooseOffering(offering)
+Cross-reference: Use Case: Accept offering
+Preconditions:
+1. An offering filling is underway
+2. An Offering instance already exists
+3. An Instructor instance already exists
+Postconditions:
+1. Instance offering has been associated with instructor (Association formation)
+2. Instance offering has been made visible to clients (Instance update)
+
+Contract CO5: deleteUser
+Operation: deleteUser(user)
+Cross-reference: Use Case: Delete user
+Preconditions:
+1. User deletion is underway
+2. A User instance already exists
+Postconditions:
+1. Instance user has been deleted (Instance destruction)
+2. Any associations to existing offerings have been deleted (Association destruction)
+
+Contract CO6: updateAvailability
+Operation: updateAvailability(cities)
+Cross-reference: Use case: Update availability
+Preconditions:
+1. An Instructor instance already exists
+2. A City instance already exists
+3. An instructor availability update is underway
+Postconditions:
+1. Instance instructor has been associated with city (Association formation)
+
+
+
