@@ -1,7 +1,8 @@
-System
+System operations:
 createInstructorAccount()
 createOffering()
 updateAvailability()
+chooseOffering()
 createLesson()
 deleteUser()
 
@@ -45,5 +46,23 @@ Postconditions:
 
 Contract CO5: deleteUser
 Operation: deleteUser(user)
+Cross-reference: Use Case: Delete user
+Preconditions:
+1. User deletion is underway
+2. A User instance already exists
+Postconditions:
+1. Instance user has been deleted (Instance destruction)
+2. Any associations to existing offerings have been deleted (Association destruction)
+
+Contract CO6: updateAvailability
+Operation: updateAvailability(cities)
+Cross-reference: Use case: Update availability
+Preconditions:
+1. An Instructor instance already exists
+2. A City instance already exists
+3. An instructor availability update is underway
+Postconditions:
+1. Instance instructor has been associated with city (Association formation)
+
 
 
