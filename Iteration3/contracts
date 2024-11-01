@@ -1,0 +1,51 @@
+System
+createClientAccount()
+createBeneficiary()
+createBooking()
+deleteBooking()
+
+
+Contract CO1: createClientAccount()
+Operation: createClientAccount(name, username, password, age)
+Cross-References: Use Case: Register client
+Preconditions: 
+1. A Client creation is underway
+2. Client is at least 18 years old.
+Postconditions:
+1. A Client instance has been created (Instance creation)
+
+Contract CO2: createBeneficiary()
+Operation: createBeneficiary(client, name, age, relationship)
+Cross-References: Use Case: Register beneficiary
+Preconditions:
+1. A Client instance already exists.
+2. A Beneficiary creation is underway.
+Postconditions:
+1. A Beneficiary instance has been created (Instance creation)
+2. Instance beneficiary has been associated with Client (Association formation)
+
+Contract CO3: createBooking()
+Operation: createBooking(offering, client)
+Cross-reference: Use case: Book offering
+Preconditions: 
+1. An Offering instance already exists.
+2. A Client instance already exists.
+3. Instance offering is not fully booked.
+Postconditions: 
+1. A Booking instance has been created (Instance creation)
+2. Instance booking has been associated with client (Association formation)
+3. Instance booking has been associated with offering (Association formation)
+
+Contract CO4: deleteBooking()
+Operation: deleteBooking(booking)
+Cross-reference: Use Case: Cancel booking
+Preconditions:
+1. A Client instance already exists
+2. A Booking instance already exists
+3. A booking cancellation is underway.
+Postconditions:
+1. Instance booking has been unlinked with offering (Instance update)
+2. Instance booking has been unlinked with client (Instance update)
+3. Instance booking has been deleted.
+
+
