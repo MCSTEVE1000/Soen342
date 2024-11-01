@@ -1,123 +1,142 @@
 # Soen342
-Soen 342 project
+Soen 342 Project
 
 ## Team Members
 Section H
 
-Steven Gourgy, 40213440         Email:stevengourgy@hotmail.com
+- **Steven Gourgy, 40213440**  
+  Email: stevengourgy@hotmail.com
 
-Harun Slahaldin Omar, 40250981  Email:harunager@outlook.com
+- **Harun Slahaldin Omar, 40250981**  
+  Email: harunager@outlook.com
 
+## Development Environment Setup
 
+### 1. Clone a Specific Branch of the Repository
+To clone a specific branch, use:
+```bash
+git clone -b <branch_name> https://github.com/MCSTEVE1000/Soen342
+```
 
-# Development Environment Setup
+### 2. Navigate to the Project Directory
+Once the repository is cloned, navigate to the project directory:
+```bash
+cd <project_directory>
+```
 
-1. **Clone a specific branch of the Repository**:
-    ```bash
-    git clone -b branch_name https://github.com/MCSTEVE1000/Soen342
-    ```
+### 3. Workflow and Version Control
 
-2. **Navigate to the Project Directory**:
-    Once the repository is cloned, both teams should navigate to the project directory using the terminal or command prompt:
-    ```bash
-    cd <project_directory>
-    ```
+- **Create a New Branch**  
+  Create a new branch for your work before pushing changes:
+  ```bash
+  git checkout -b <branch_name>
+  ```
 
-3. **Workflow and Version Control**
+- **Write Acceptance Tests**  
+  Ensure your code meets project requirements by writing acceptance tests.
 
-    - **Create a New Branch**:
-        Before pushing their changes to the main repository, team members should create a new branch for their work:
-        ```bash
-        git checkout -b <branch_name>
-        ```
+- **Commit Changes**  
+  Once work is completed and tested locally, commit changes:
+  ```bash
+  git add .
+  git commit -m "Brief description of changes"
+  ```
 
-    - **Write Acceptance Tests**:
-        Before finalizing their work, team members should write acceptance tests to ensure their code meets project requirements.
+- **Push Changes to Remote**  
+  Push your branch to the remote repository:
+  ```bash
+  git push
+  ```
 
-    - **Commit Changes**:
-        Once work is completed and tested locally, team members should commit changes to the local repository:
-        ```bash
-        git add .
-        git commit -m "Brief description of changes"
-        ```
+---
 
-    - **Push Changes to Remote**:
-        After committing changes locally, team members should push their branch to the remote repository:
-        ```bash
-        git push
-        ```
+## Setting Up Maven in VSCode
 
+### 1.1 Install Java and Maven
+Ensure the Java Development Kit (JDK) and Maven are installed on your system.
 
-# Setting Up the Django Project
+- **Install Java JDK**  
+  Download the latest JDK from Oracle or use OpenJDK from AdoptOpenJDK.
 
-1. **Install virtualenv**:
-    ```bash
-    pip install virtualenv
-    ```
+- **Install Maven**
 
-2. **Create a virtual environment**:
-    ```bash
-    python -m venv venv
-    ```
+  **Option 1: Install Manually**  
+  1. Download Maven from the Apache Maven website.
+  2. Extract to a chosen directory.
+  3. Add Maven's `bin` directory to your system's PATH.
 
-3. **Set Execution Policy (Windows only)**:
-    ```powershell
-    Set-ExecutionPolicy Unrestricted -Scope Process
-    ```
+  **Option 2: Use a Package Manager**  
+  - **Windows**: Run `choco install maven`
+  - **macOS**: Run `brew install maven`
+  - **Linux**: Run `sudo apt-get install maven`
 
-4. **Activate the virtual environment**:
-    - On **Windows**:
-      ```bash
-      .\venv\Scripts\activate
-      ```
-    - On **macOS/Linux**:
-      ```bash
-      source venv/bin/activate
-      ```
+- **Verify Installation**  
+  Open a terminal and check Maven's version:
+  ```bash
+  mvn -version
+  ```
 
-5. **Install Django**:
-    ```bash
-    pip install django
-    ```
+### 1.2 Install VSCode Extensions
+Install these VSCode extensions for Java and Maven support:
 
-6. **Generate `requirements.txt`**:
-    ```bash
-    pip freeze > requirements.txt
-    ```
+- **Extension Pack for Java**  
+  Essential extensions for Java development. Find it in the VSCode Marketplace.
 
-7. **Install dependencies from `requirements.txt`**:
-    ```bash
-    pip install -r requirements.txt
-    ```
+- **Maven for Java**  
+  Adds Maven support to VSCode. Find it in the VSCode Marketplace.
 
-8. **Make migrations**:
-    ```bash
-    python manage.py makemigrations
-    ```
+### 1.3 Compile and Run Maven Project
+To compile and run the project:
+```bash
+mvn compile
+mvn exec:java
+```
 
-9. **Apply migrations**:
-    ```bash
-    python manage.py migrate
-    ```
+---
 
-10. **Run the server**:
-    ```bash
-    python manage.py runserver
-    ```
+## SQLite Database Setup
 
-11. **Access the admin panel**:
-    - http://127.0.0.1:8000/admin/login/?next=/admin/
+To interact with the database (`app_database.db`), use these commands in the SQLite shell.
 
-12. **Register Home page**:
-    - http://127.0.0.1:8000/home/
+- **Check Database Tables**  
+  ```bash
+  .tables
+  ```
 
-13. **Create a superuser**:
-    ```bash
-    python manage.py createsuperuser
-    ```
+- **View Table Schema**  
+  ```bash
+  .schema TableName
+  .schema Users
+  ```
 
-    - **Email**: stevengourgy@hotmail.com 
-    - **Username**: steve
-    - **Password**: password
+- **Display Data from a Table**  
+  ```bash
+  SELECT * FROM TableName;
+  SELECT * FROM Users;
+  ```
 
+  For readable output:
+  ```bash
+  .mode column
+  .headers on
+  ```
 
+- **Count Records in a Table**  
+  ```bash
+  SELECT COUNT(*) FROM TableName;
+  ```
+
+- **Filter Data**  
+  ```bash
+  SELECT * FROM Users WHERE userType = 'Client';
+  ```
+
+- **Describe a Table (List Columns and Their Types)**  
+  ```bash
+  PRAGMA table_info('TableName');
+  ```
+
+- **Exit SQLite Shell**  
+  ```bash
+  .exit
+  ```
