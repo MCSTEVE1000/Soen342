@@ -95,6 +95,10 @@ mvn exec:java
 ---
 
 ## SQLite Database Setup
+To open the SQLite shell, run this in your terminal:
+```bash
+  sqlite3 app_database.db
+  ```
 
 To interact with the database (`app_database.db`), use these commands in the SQLite shell.
 
