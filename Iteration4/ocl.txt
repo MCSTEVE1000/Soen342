@@ -1,0 +1,32 @@
+1. “Offerings are unique. In other words, multiple offerings on the same day and time slot must be offered at a different location.
+
+context Offering
+inv requirement1: 
+    OfferingCatalog.allInstances()->forAll(o1, o2 | 
+        o1 <> o2 implies 
+        (o1.date <> o2.date or o1.startTime <> o2.startTime or o1.location <> o2.location))
+
+
+
+2. “Any client who is underage must necessarily be accompanied by an adult who acts as their guardian.”
+
+context Client
+inv requirement2: 
+    self.isUnderage implies self.guardianId <> null
+
+
+
+3. “The city associated with an offering must be one the city’s that the instructor has indicated in their availabilities.”
+
+context Offering
+inv requirement3: 
+    self.instructor.availabilities.cities->includes(self.location.city)
+
+
+
+4. “A client does not have multiple bookings on the same day and time slot.” 
+
+context Booking
+inv requirement4:
+    Booking.getClientBookings(self.clientId)->forAll(b | 
+        b = self or b.date <> self.date or b.startTime <> self.startTime)
