@@ -93,6 +93,11 @@ mvn exec:java
 ```
 
 ---
+ADMIN LOGIN:
+Enter phone number: 123
+Enter password: 123
+
+
 
 ## SQLite Database Setup
 To open the SQLite shell, run this in your terminal:
