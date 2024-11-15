@@ -12,23 +12,61 @@ public class Schedule {
         Connection conn = DBConnection.getConnection();
         System.out.println("Public Offerings:");
         try {
-            String query = "SELECT id FROM Offerings WHERE visible = 1";
+            String query = "SELECT id FROM Offerings WHERE visible = 1 AND available = 1";
             PreparedStatement pstmt = conn.prepareStatement(query);
             ResultSet rs = pstmt.executeQuery();
 
-            int index = 0;
             while (rs.next()) {
                 int id = rs.getInt("id");
                 Offering offering = Offering.getOfferingById(id);
                 if (offering != null) {
-                    System.out.println(index + ". " + offering);
-                    index++;
+                    System.out.println(offering);
                 }
             }
         } catch (SQLException e) {
             System.err.println("Error retrieving public offerings.");
             e.printStackTrace();
         }
+    }
+
+    public static void viewPublicOfferingsWithIDs() {
+        Connection conn = DBConnection.getConnection();
+        System.out.println("Available Offerings:");
+        try {
+            String query = "SELECT id FROM Offerings WHERE visible = 1 AND available = 1";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                Offering offering = Offering.getOfferingById(id);
+                if (offering != null) {
+                    System.out.println("ID: " + offering.id + " - " + offering);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving public offerings with IDs.");
+            e.printStackTrace();
+        }
+    }
+
+    public static Offering getOfferingByIndex(int index) {
+        Connection conn = DBConnection.getConnection();
+        try {
+            String query = "SELECT id FROM Offerings WHERE visible = 1 AND available = 1 LIMIT 1 OFFSET ?";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setInt(1, index);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                int id = rs.getInt("id");
+                return Offering.getOfferingById(id);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving offering by index.");
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static List<Offering> getOfferingsByInstructor(Instructor instructor) {
@@ -55,12 +93,12 @@ public class Schedule {
         return offerings;
     }
 
-    public static List<Offering> getOfferingsForInstructor(Instructor instructor) {
+    public static List<Offering> getAllAvailableOfferings() {
         List<Offering> offerings = new java.util.ArrayList<>();
         Connection conn = DBConnection.getConnection();
 
         try {
-            String query = "SELECT id FROM Offerings WHERE visible = 0";
+            String query = "SELECT id FROM Offerings WHERE visible = 0 AND available = 1";
             PreparedStatement pstmt = conn.prepareStatement(query);
             ResultSet rs = pstmt.executeQuery();
 
@@ -68,15 +106,11 @@ public class Schedule {
                 int id = rs.getInt("id");
                 Offering offering = Offering.getOfferingById(id);
                 if (offering != null) {
-                    for (City city : instructor.availabilities.cities) {
-                        if (offering.getLocation().getCity().getName().equalsIgnoreCase(city.getName())) {
-                            offerings.add(offering);
-                        }
-                    }
+                    offerings.add(offering);
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error retrieving offerings for instructor.");
+            System.err.println("Error retrieving all available offerings.");
             e.printStackTrace();
         }
 

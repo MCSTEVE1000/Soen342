@@ -13,8 +13,8 @@ public class Offering {
     boolean available;
     private boolean isGroup;
     private boolean visible = false;
-    private int capacity;
-    private int enrolled = 0;
+    private int capacity; // Total capacity
+    private int enrolled = 0; // Number of enrolled clients
     Instructor instructor;
     private String instructorId;
     private String date;
@@ -32,31 +32,52 @@ public class Offering {
         this.date = date;
         this.offeringName = offeringName;
         this.available = true;
+        this.enrolled = 0; // Initialize enrolled to zero
     }
 
     public Location getLocation() {
         return location;
     }
 
-    public String getStartTime() { return startTime; }
+    public String getStartTime() {
+        return startTime;
+    }
 
-    public String getEndTime() { return endTime; }
+    public String getEndTime() {
+        return endTime;
+    }
 
-    public boolean isAvailable() { return available; }
+    public boolean isAvailable() {
+        return available;
+    }
 
-    public boolean isGroup() { return isGroup; }
+    public boolean isGroup() {
+        return isGroup;
+    }
 
-    public boolean isVisible() { return visible; }
+    public boolean isVisible() {
+        return visible;
+    }
 
-    public int getCapacity() { return capacity; }
+    public int getCapacity() {
+        return capacity;
+    }
 
-    public int getEnrolled() { return enrolled; }
+    public int getEnrolled() {
+        return enrolled;
+    }
 
-    public Instructor getInstructor() { return instructor; }
+    public Instructor getInstructor() {
+        return instructor;
+    }
 
-    public String getDate() { return date; }
+    public String getDate() {
+        return date;
+    }
 
-    public String getOfferingName() { return offeringName; }
+    public String getOfferingName() {
+        return offeringName;
+    }
 
     public void setInstructor(Instructor instructor) {
         this.instructor = instructor;
@@ -65,11 +86,41 @@ public class Offering {
         updateInDB();
     }
 
+    public boolean hasConflict() {
+        Connection conn = DBConnection.getConnection();
+        try {
+            String query = "SELECT COUNT(*) FROM Offerings WHERE location = ? AND date = ? AND (" +
+                    "(startTime < ? AND endTime > ?) OR " +
+                    "(startTime >= ? AND startTime < ?))";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, location.toString());
+            pstmt.setString(2, date);
+            pstmt.setString(3, endTime);
+            pstmt.setString(4, startTime);
+            pstmt.setString(5, startTime);
+            pstmt.setString(6, endTime);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                return count > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking for conflicting offerings.");
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public boolean saveToDB() {
+        if (hasConflict()) {
+            System.out.println("Cannot save offering: conflicting offering exists at the same location and time.");
+            return false;
+        }
+
         Connection conn = DBConnection.getConnection();
 
         try {
-            String insertOffering = "INSERT INTO Offerings(location, startTime, endTime, isGroup, capacity, date, offeringName, instructorId, available, visible) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String insertOffering = "INSERT INTO Offerings(location, startTime, endTime, isGroup, capacity, date, offeringName, instructorId, available, visible, enrolled) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(insertOffering, PreparedStatement.RETURN_GENERATED_KEYS);
             pstmt.setString(1, location.toString());
             pstmt.setString(2, startTime);
@@ -81,6 +132,7 @@ public class Offering {
             pstmt.setString(8, instructorId);
             pstmt.setInt(9, available ? 1 : 0);
             pstmt.setInt(10, visible ? 1 : 0);
+            pstmt.setInt(11, enrolled); // Save enrolled count
             pstmt.executeUpdate();
 
             ResultSet rs = pstmt.getGeneratedKeys();
@@ -100,12 +152,14 @@ public class Offering {
         Connection conn = DBConnection.getConnection();
 
         try {
-            String updateOffering = "UPDATE Offerings SET instructorId = ?, available = ?, visible = ? WHERE id = ?";
+            String updateOffering = "UPDATE Offerings SET instructorId = ?, available = ?, visible = ?, capacity = ?, enrolled = ? WHERE id = ?";
             PreparedStatement pstmt = conn.prepareStatement(updateOffering);
             pstmt.setString(1, instructorId);
             pstmt.setInt(2, available ? 1 : 0);
             pstmt.setInt(3, visible ? 1 : 0);
-            pstmt.setInt(4, id);
+            pstmt.setInt(4, capacity); // Update capacity
+            pstmt.setInt(5, enrolled); // Update enrolled count
+            pstmt.setInt(6, id);
             pstmt.executeUpdate();
 
             return true;
@@ -113,6 +167,20 @@ public class Offering {
             System.err.println("Error updating offering in database.");
             e.printStackTrace();
             return false;
+        }
+    }
+
+    public void incrementEnrolled() {
+        this.enrolled++;
+        if (this.enrolled >= this.capacity) {
+            this.available = false;
+        }
+    }
+
+    public void decrementEnrolled() {
+        this.enrolled--;
+        if (this.enrolled < this.capacity) {
+            this.available = true;
         }
     }
 
@@ -133,6 +201,7 @@ public class Offering {
                 offering.endTime = rs.getString("endTime");
                 offering.isGroup = rs.getInt("isGroup") == 1;
                 offering.capacity = rs.getInt("capacity");
+                offering.enrolled = rs.getInt("enrolled"); // Retrieve enrolled count
                 offering.date = rs.getString("date");
                 offering.offeringName = rs.getString("offeringName");
                 offering.instructorId = rs.getString("instructorId");
@@ -157,8 +226,10 @@ public class Offering {
         String groupType = isGroup ? "Group" : "Private";
         String availability = available ? "Available" : "Not Available";
         String instructorName = (instructor != null) ? instructor.getName() : "TBD";
-        return String.format("%s %s Class with %s on %s from %s to %s at %s (%s)",
+        String cityName = location.getCity().getName();
+        int spotsLeft = capacity - enrolled; // Calculate spots left
+        return String.format("%s %s Class with %s on %s from %s to %s at %s in %s (%s) - Spots Available: %d",
                 groupType, offeringName, instructorName, date, startTime, endTime,
-                location.getOrganization(), availability);
+                location.getOrganization(), cityName, availability, spotsLeft);
     }
 }

@@ -5,7 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
+
 import org.mindrot.jbcrypt.BCrypt;
+
+import java.util.List;
 
 public class Admin extends Users {
     private static Scanner scanner = new Scanner(System.in);
@@ -191,6 +194,13 @@ public class Admin extends Users {
         Location location = new Location(address, city, organization, room);
 
         Offering newOffering = new Offering(location, startTime, endTime, isGroup, capacity, date, offeringName);
+
+        // Check for conflicts before saving
+        if (newOffering.hasConflict()) {
+            System.out.println("The location is already booked for the specified date and time.");
+            return;
+        }
+
         if (newOffering.saveToDB()) {
             System.out.println("Offering created successfully.");
         } else {
@@ -200,6 +210,14 @@ public class Admin extends Users {
 
     private static void deleteAccount() {
         System.out.println("Deleting an account...");
+
+        // Retrieve and display all users
+        System.out.println("List of Users:");
+        List<Users> usersList = Users.getAllUsers();
+        for (Users user : usersList) {
+            System.out.println("Name: " + user.getName() + ", Phone Number: " + user.getPhoneNumber() + ", Type: " + user.getUserType());
+        }
+
         System.out.print("Enter the phone number of the account to delete: ");
         String phoneNumber = scanner.nextLine();
 
