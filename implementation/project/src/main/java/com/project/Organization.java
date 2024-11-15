@@ -34,7 +34,6 @@ public class Organization {
         this.address = address;
     }
 
-    // Optionally, you can override toString() for better representation
     @Override
     public String toString() {
         return "Organization{name='" + name + "', address='" + address + "'}";

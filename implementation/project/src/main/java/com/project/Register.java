@@ -4,13 +4,11 @@ public class Register {
     private String email;
     private String password;
 
-    // Constructor
     public Register(String email, String password) {
         this.email = email;
         this.password = password;
     }
 
-    // Getters and Setters
     public String getEmail() {
         return email;
     }
@@ -27,5 +25,4 @@ public class Register {
         this.password = password;
     }
 
-    // Optionally, you can add methods for registration logic
 }

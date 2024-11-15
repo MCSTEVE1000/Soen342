@@ -36,7 +36,6 @@ public class Admin extends Users {
         System.out.print("Enter phone number: ");
         String phoneNumber = scanner.nextLine();
 
-        // Check if phoneNumber already exists
         if (Users.findUserByPhoneNumber(phoneNumber) != null) {
             System.out.println("Error: Phone number already in use.");
             return;
@@ -58,7 +57,6 @@ public class Admin extends Users {
         Connection conn = DBConnection.getConnection();
 
         try {
-            // Check if phoneNumber already exists in Users table
             if (Users.findUserByPhoneNumber(this.phoneNumber) != null) {
                 System.out.println("Error: Phone number already in use.");
                 return false;
@@ -215,7 +213,6 @@ public class Admin extends Users {
 
         Offering newOffering = new Offering(location, startTime, endTime, isGroup, capacity, date, offeringName);
 
-        // Check for conflicts before saving
         if (newOffering.hasConflict()) {
             System.out.println("The location is already booked for the specified date and time.");
             return;
@@ -231,7 +228,6 @@ public class Admin extends Users {
     private static void deleteAccount() {
         System.out.println("Deleting an account...");
 
-        // Retrieve and display all users
         System.out.println("List of Users:");
         List<Users> usersList = Users.getAllUsers();
         for (Users user : usersList) {

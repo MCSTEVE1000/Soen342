@@ -38,7 +38,6 @@ public class Booking {
                 }
             }
 
-            // Update the offering's enrolled count and availability
             Offering offering = Offering.getOfferingById(offeringId);
             if (offering != null) {
                 offering.incrementEnrolled();
@@ -76,7 +75,7 @@ public class Booking {
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt(1);
-                    return count > 0; // Returns true if at least one booking exists
+                    return count > 0; 
                 }
             }
         } catch (SQLException e) {
@@ -95,10 +94,9 @@ public class Booking {
 
         Offering offering = Offering.getOfferingById(offeringId);
         if (offering != null && offering.isAvailable()) {
-            // Check if the client already has a booking for this offering
             if (Booking.hasExistingBooking(client.getUniqueId(), offeringId)) {
                 System.out.println("You have already booked this offering.");
-                return; // Do not proceed with booking
+                return; 
             }
 
             Booking newBooking = new Booking(client.getUniqueId(), offering.getId());
@@ -169,7 +167,7 @@ public class Booking {
                 scanner.nextLine();
 
                 if (bookingIds.contains(bookingIdToCancel)) {
-                    // Retrieve offeringId before deleting
+                    
                     String getOfferingIdQuery = "SELECT offeringId FROM Bookings WHERE id = ?";
                     int offeringId = -1;
                     try (PreparedStatement pstmtGetOfferingId = conn.prepareStatement(getOfferingIdQuery)) {
@@ -181,18 +179,18 @@ public class Booking {
                         }
                     }
 
-                    // Now delete the booking and update offering within a transaction
+                    
                     try {
                         conn.setAutoCommit(false);
 
-                        // Delete the booking
+                        
                         String deleteBooking = "DELETE FROM Bookings WHERE id = ?";
                         try (PreparedStatement pstmtDelete = conn.prepareStatement(deleteBooking)) {
                             pstmtDelete.setInt(1, bookingIdToCancel);
                             pstmtDelete.executeUpdate();
                         }
 
-                        // Update the offering's enrolled count and availability
+                       
                         if (offeringId != -1) {
                             Offering offering = Offering.getOfferingById(offeringId);
                             if (offering != null) {
@@ -220,7 +218,6 @@ public class Booking {
         }
     }
 
-    // Methods for guardians to manage bookings for their wards
 
     public static void makeBookingForWard(Client guardian) {
         List<Client> wards = getWards(guardian);
@@ -245,7 +242,7 @@ public class Booking {
 
         Client ward = wards.get(choice - 1);
 
-        // Proceed with booking for the selected ward
+        
         System.out.println("Available Offerings:");
         Schedule.viewPublicOfferingsWithIDs();
         System.out.print("Enter the ID of the offering you want to book: ");
@@ -320,7 +317,7 @@ public class Booking {
         cancelBooking(ward);
     }
 
-    // Helper method to get wards of a guardian
+    
     private static List<Client> getWards(Client guardian) {
         Connection conn = DBConnection.getConnection();
         List<Client> wards = new ArrayList<>();

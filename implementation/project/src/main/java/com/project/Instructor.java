@@ -31,7 +31,6 @@ public class Instructor extends Users {
         Connection conn = DBConnection.getConnection();
 
         try {
-            // Check if phoneNumber already exists in Users table
             if (Users.findUserByPhoneNumber(this.phoneNumber) != null) {
                 System.out.println("Error: Phone number already in use.");
                 return false;
@@ -68,31 +67,26 @@ public class Instructor extends Users {
         Connection conn = DBConnection.getConnection();
 
         try {
-            // Start transaction
             conn.setAutoCommit(false);
 
-            // Update offerings assigned to this instructor
             String updateOfferings = "UPDATE Offerings SET instructorId = NULL, visible = 0 WHERE instructorId = ?";
             try (PreparedStatement pstmtOfferings = conn.prepareStatement(updateOfferings)) {
                 pstmtOfferings.setString(1, this.uniqueId);
                 pstmtOfferings.executeUpdate();
             }
 
-            // Delete instructor record
             String deleteInstructor = "DELETE FROM Instructors WHERE uniqueId = ?";
             try (PreparedStatement pstmtInstructor = conn.prepareStatement(deleteInstructor)) {
                 pstmtInstructor.setString(1, this.uniqueId);
                 pstmtInstructor.executeUpdate();
             }
 
-            // Delete user record
             String deleteUser = "DELETE FROM Users WHERE uniqueId = ?";
             try (PreparedStatement pstmtUser = conn.prepareStatement(deleteUser)) {
                 pstmtUser.setString(1, this.uniqueId);
                 pstmtUser.executeUpdate();
             }
 
-            // Commit transaction
             conn.commit();
             return true;
         } catch (SQLException e) {
@@ -166,7 +160,6 @@ public class Instructor extends Users {
         System.out.print("Enter your phone number: ");
         String phoneNumber = scanner.nextLine();
 
-        // Check if phoneNumber already exists
         if (Users.findUserByPhoneNumber(phoneNumber) != null) {
             System.out.println("Error: Phone number already in use.");
             return;
