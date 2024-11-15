@@ -2,7 +2,7 @@
 Soen 342 Project
 
 ## Video
-https://drive.google.com/file/d/18VZWkTSyEVoHDaoK8DEhN6TwhMN2argD/view?usp=sharing  
+https://drive.google.com/file/d/1uezFR-EAgNVbyCw2DyoK68datjpBiOH2/view?usp=sharing
 
 ## Team Members
 Section H
@@ -91,7 +91,7 @@ Install these VSCode extensions for Java and Maven support:
 ### 1.3 Compile and Run Maven Project
 To compile and run the project:
 ```bash
-mvn compile
+mvn clean compile
 mvn exec:java
 ```
 
@@ -102,53 +102,103 @@ Enter password: 123
 
 
 
-## SQLite Database Setup
-To open the SQLite shell, run this in your terminal:
+## MySQL Database Setup
+
+### Install MySQL Server
+If you don't have MySQL installed, you need to install it to run the project.
+
+#### Download and Install MySQL
+  Download the MySQL Installer from [MySQL Downloads](https://dev.mysql.com/downloads/installer/).
+  Run the installer and follow the installation steps.
+    -Choose "Custom" setup.
+    -Install MySQL Server (and MySQL Workbench if desired).
+    -Use Legacy Authentication Method when prompted.
+    -Set a root password when configuring the server. (I used 1234)
+
+
+#### Create the Database and User
+  Open Command Prompt and connect to MySQL:
+  ```bash
+mysql -u root -p
+```
+Create Database:
 ```bash
-  sqlite3 app_database.db
-  ```
+CREATE DATABASE project_db;
+```
+Create User and Grant Privileges:
+```bash
+CREATE USER 'project_user'@'localhost' IDENTIFIED BY 'secure_password';
+GRANT ALL PRIVILEGES ON project_db.* TO 'project_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
 
-To interact with the database (`app_database.db`), use these commands in the SQLite shell.
+```
 
-- **Check Database Tables**  
-  ```bash
-  .tables
-  ```
 
-- **View Table Schema**  
-  ```bash
-  .schema TableName
-  .schema Users
-  ```
 
-- **Display Data from a Table**  
-  ```bash
-  SELECT * FROM TableName;
-  SELECT * FROM Users;
-  ```
 
-  For readable output:
-  ```bash
-  .mode column
-  .headers on
-  ```
+#### Configure the Project to Use Your Database
 
-- **Count Records in a Table**  
-  ```bash
-  SELECT COUNT(*) FROM TableName;
-  ```
+Ensure that the database connection parameters in DBConnection.java match your MySQL setup.
 
-- **Filter Data**  
-  ```bash
-  SELECT * FROM Users WHERE userType = 'Client';
-  ```
+Open src/main/java/com/project/DBConnection.java
 
-- **Describe a Table (List Columns and Their Types)**  
-  ```bash
-  PRAGMA table_info('TableName');
-  ```
+Set Connection Parameters:
+```bash
+// Database credentials
+String url = "jdbc:mysql://localhost:3306/project_db?useSSL=false&serverTimezone=UTC";
+String user = "project_user";
+String password = "secure_password";
+```
+Replace secure_password with the password you set up (I used 1234)
+ 
 
-- **Exit SQLite Shell**  
-  ```bash
-  .exit
-  ```
+    
+#### Build the Project
+ In the project directory, run:
+```bash
+mvn clean compile
+mvn exec:java
+```
+
+## Log in as Admin
+  When prompted in the application, log in using:
+Phone Number:123
+Password: 123
+
+## Check Database on MySql Workbench
+
+#### Step 1: Launch MySQL Workbench
+
+#### Step 2: Create a New Connection
+Create a new Connection with
+
+Connection Name: Enter a name for your connection, e.g., "Soen 342 Project Database".
+
+Connection Method: Keep it as "Standard (TCP/IP)".
+
+Hostname: localhost (since the MySQL server is running on your local machine).
+
+Port: 3306 (default MySQL port).
+
+Username: Enter the username you created earlier, e.g., project_user.
+
+Password: 1234
+
+Click "OK" to save the password.
+
+Click on "Test Connection".
+
+If the connection is successful, you'll see a message:
+```bash
+Successfully made the MySQL connection.
+```
+Click "OK" to save the connection configuration.
+
+#### Step 3: Explore the project_db Database
+
+```bash
+SELECT * FROM Offerings;
+SELECT * FROM Users;
+ETC
+```
