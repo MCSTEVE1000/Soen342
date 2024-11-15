@@ -1,4 +1,5 @@
 package com.project;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,9 +13,10 @@ public class OfferingCatalog {
     public static List<Offering> getOfferings() {
         return offeringCatalog;
     }
-        public static List<Offering> getOfferings(Instructor instructor) {
+
+    public static List<Offering> getOfferings(Instructor instructor) {
         List<Offering> offerings = new ArrayList<>();
-        for (Offering offering : OfferingCatalog.getOfferings()) {
+        for (Offering offering : offeringCatalog) {
             for (City city : instructor.availabilities.cities) {
                 if ((offering.getLocation().getCity().getName()).equals(city.getName())) {
                     offerings.add(offering);
@@ -33,4 +35,4 @@ public class OfferingCatalog {
             System.out.println(offering);
         }
     }
-}   
+}

@@ -11,7 +11,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import java.util.List;
 
 public class Admin extends Users {
-    private static Scanner scanner = new Scanner(System.in);
+    private static final Scanner scanner = new Scanner(System.in);
 
     public Admin(String name, String phoneNumber, String password) {
         super(name, phoneNumber, password, "Admin");
@@ -35,6 +35,13 @@ public class Admin extends Users {
         String name = scanner.nextLine();
         System.out.print("Enter phone number: ");
         String phoneNumber = scanner.nextLine();
+
+        // Check if phoneNumber already exists
+        if (Users.findUserByPhoneNumber(phoneNumber) != null) {
+            System.out.println("Error: Phone number already in use.");
+            return;
+        }
+
         System.out.print("Enter password: ");
         String password = scanner.nextLine();
 
@@ -51,19 +58,27 @@ public class Admin extends Users {
         Connection conn = DBConnection.getConnection();
 
         try {
+            // Check if phoneNumber already exists in Users table
+            if (Users.findUserByPhoneNumber(this.phoneNumber) != null) {
+                System.out.println("Error: Phone number already in use.");
+                return false;
+            }
+
             String insertUser = "INSERT INTO Users(uniqueId, name, phoneNumber, password, userType) VALUES(?, ?, ?, ?, ?)";
-            PreparedStatement pstmtUser = conn.prepareStatement(insertUser);
-            pstmtUser.setString(1, this.uniqueId);
-            pstmtUser.setString(2, this.name);
-            pstmtUser.setString(3, this.phoneNumber);
-            pstmtUser.setString(4, this.password);
-            pstmtUser.setString(5, this.userType);
-            pstmtUser.executeUpdate();
+            try (PreparedStatement pstmtUser = conn.prepareStatement(insertUser)) {
+                pstmtUser.setString(1, this.uniqueId);
+                pstmtUser.setString(2, this.name);
+                pstmtUser.setString(3, this.phoneNumber);
+                pstmtUser.setString(4, this.password);
+                pstmtUser.setString(5, this.userType);
+                pstmtUser.executeUpdate();
+            }
 
             String insertAdmin = "INSERT INTO Admins(uniqueId) VALUES(?)";
-            PreparedStatement pstmtAdmin = conn.prepareStatement(insertAdmin);
-            pstmtAdmin.setString(1, this.uniqueId);
-            pstmtAdmin.executeUpdate();
+            try (PreparedStatement pstmtAdmin = conn.prepareStatement(insertAdmin)) {
+                pstmtAdmin.setString(1, this.uniqueId);
+                pstmtAdmin.executeUpdate();
+            }
 
             return true;
         } catch (SQLException e) {
@@ -79,14 +94,16 @@ public class Admin extends Users {
 
         try {
             String deleteAdmin = "DELETE FROM Admins WHERE uniqueId = ?";
-            PreparedStatement pstmtAdmin = conn.prepareStatement(deleteAdmin);
-            pstmtAdmin.setString(1, this.uniqueId);
-            pstmtAdmin.executeUpdate();
+            try (PreparedStatement pstmtAdmin = conn.prepareStatement(deleteAdmin)) {
+                pstmtAdmin.setString(1, this.uniqueId);
+                pstmtAdmin.executeUpdate();
+            }
 
             String deleteUser = "DELETE FROM Users WHERE uniqueId = ?";
-            PreparedStatement pstmtUser = conn.prepareStatement(deleteUser);
-            pstmtUser.setString(1, this.uniqueId);
-            pstmtUser.executeUpdate();
+            try (PreparedStatement pstmtUser = conn.prepareStatement(deleteUser)) {
+                pstmtUser.setString(1, this.uniqueId);
+                pstmtUser.executeUpdate();
+            }
 
             return true;
         } catch (SQLException e) {
@@ -100,21 +117,24 @@ public class Admin extends Users {
     public boolean login(String identifier, String password) {
         Connection conn = DBConnection.getConnection();
 
-        try {
-            String query = "SELECT * FROM Users WHERE phoneNumber = ? AND userType = 'Admin'";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+        String query = "SELECT * FROM Users WHERE phoneNumber = ? AND userType = 'Admin'";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, identifier);
-            ResultSet rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                String dbPassword = rs.getString("password");
-                if (BCrypt.checkpw(password, dbPassword)) {
-                    this.uniqueId = rs.getString("uniqueId");
-                    this.name = rs.getString("name");
-                    this.phoneNumber = rs.getString("phoneNumber");
-                    this.password = dbPassword;
-                    Session.getInstance(this);
-                    return true;
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    String dbPassword = rs.getString("password");
+                    if (BCrypt.checkpw(password, dbPassword)) {
+                        this.uniqueId = rs.getString("uniqueId");
+                        this.name = rs.getString("name");
+                        this.phoneNumber = rs.getString("phoneNumber");
+                        this.password = dbPassword;
+                        Session.getInstance(this);
+                        return true;
+                    } else {
+                        System.out.println("Incorrect password.");
+                    }
+                } else {
+                    System.out.println("Admin not found with the given phone number.");
                 }
             }
         } catch (SQLException e) {

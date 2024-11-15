@@ -7,9 +7,10 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Scanner;
 import org.mindrot.jbcrypt.BCrypt;
+import java.util.ArrayList;
 
 public class Instructor extends Users {
-    private static Scanner scanner = new Scanner(System.in);
+    private static final Scanner scanner = new Scanner(System.in);
 
     private Specialization specialization;
     Availabilities availabilities;
@@ -30,21 +31,29 @@ public class Instructor extends Users {
         Connection conn = DBConnection.getConnection();
 
         try {
+            // Check if phoneNumber already exists in Users table
+            if (Users.findUserByPhoneNumber(this.phoneNumber) != null) {
+                System.out.println("Error: Phone number already in use.");
+                return false;
+            }
+
             String insertUser = "INSERT INTO Users(uniqueId, name, phoneNumber, password, userType) VALUES(?, ?, ?, ?, ?)";
-            PreparedStatement pstmtUser = conn.prepareStatement(insertUser);
-            pstmtUser.setString(1, this.uniqueId);
-            pstmtUser.setString(2, this.name);
-            pstmtUser.setString(3, this.phoneNumber);
-            pstmtUser.setString(4, this.password);
-            pstmtUser.setString(5, this.userType);
-            pstmtUser.executeUpdate();
+            try (PreparedStatement pstmtUser = conn.prepareStatement(insertUser)) {
+                pstmtUser.setString(1, this.uniqueId);
+                pstmtUser.setString(2, this.name);
+                pstmtUser.setString(3, this.phoneNumber);
+                pstmtUser.setString(4, this.password);
+                pstmtUser.setString(5, this.userType);
+                pstmtUser.executeUpdate();
+            }
 
             String insertInstructor = "INSERT INTO Instructors(uniqueId, specialization, availabilities) VALUES(?, ?, ?)";
-            PreparedStatement pstmtInstructor = conn.prepareStatement(insertInstructor);
-            pstmtInstructor.setString(1, this.uniqueId);
-            pstmtInstructor.setString(2, this.specialization.specialization);
-            pstmtInstructor.setString(3, this.availabilities.toString());
-            pstmtInstructor.executeUpdate();
+            try (PreparedStatement pstmtInstructor = conn.prepareStatement(insertInstructor)) {
+                pstmtInstructor.setString(1, this.uniqueId);
+                pstmtInstructor.setString(2, this.specialization.specialization);
+                pstmtInstructor.setString(3, this.availabilities.toString());
+                pstmtInstructor.executeUpdate();
+            }
 
             return true;
         } catch (SQLException e) {
@@ -59,29 +68,50 @@ public class Instructor extends Users {
         Connection conn = DBConnection.getConnection();
 
         try {
+            // Start transaction
+            conn.setAutoCommit(false);
+
             // Update offerings assigned to this instructor
             String updateOfferings = "UPDATE Offerings SET instructorId = NULL, visible = 0 WHERE instructorId = ?";
-            PreparedStatement pstmtOfferings = conn.prepareStatement(updateOfferings);
-            pstmtOfferings.setString(1, this.uniqueId);
-            pstmtOfferings.executeUpdate();
+            try (PreparedStatement pstmtOfferings = conn.prepareStatement(updateOfferings)) {
+                pstmtOfferings.setString(1, this.uniqueId);
+                pstmtOfferings.executeUpdate();
+            }
 
             // Delete instructor record
             String deleteInstructor = "DELETE FROM Instructors WHERE uniqueId = ?";
-            PreparedStatement pstmtInstructor = conn.prepareStatement(deleteInstructor);
-            pstmtInstructor.setString(1, this.uniqueId);
-            pstmtInstructor.executeUpdate();
+            try (PreparedStatement pstmtInstructor = conn.prepareStatement(deleteInstructor)) {
+                pstmtInstructor.setString(1, this.uniqueId);
+                pstmtInstructor.executeUpdate();
+            }
 
             // Delete user record
             String deleteUser = "DELETE FROM Users WHERE uniqueId = ?";
-            PreparedStatement pstmtUser = conn.prepareStatement(deleteUser);
-            pstmtUser.setString(1, this.uniqueId);
-            pstmtUser.executeUpdate();
+            try (PreparedStatement pstmtUser = conn.prepareStatement(deleteUser)) {
+                pstmtUser.setString(1, this.uniqueId);
+                pstmtUser.executeUpdate();
+            }
 
+            // Commit transaction
+            conn.commit();
             return true;
         } catch (SQLException e) {
             System.err.println("Error deleting instructor from database.");
             e.printStackTrace();
+            try {
+                conn.rollback();
+            } catch (SQLException rollbackEx) {
+                System.err.println("Error rolling back transaction.");
+                rollbackEx.printStackTrace();
+            }
             return false;
+        } finally {
+            try {
+                conn.setAutoCommit(true);
+            } catch (SQLException ex) {
+                System.err.println("Error resetting auto-commit.");
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -89,32 +119,37 @@ public class Instructor extends Users {
     public boolean login(String identifier, String password) {
         Connection conn = DBConnection.getConnection();
 
-        try {
-            String query = "SELECT * FROM Users WHERE phoneNumber = ? AND userType = 'Instructor'";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+        String query = "SELECT * FROM Users WHERE phoneNumber = ? AND userType = 'Instructor'";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, identifier);
-            ResultSet rs = pstmt.executeQuery();
+            try (ResultSet rs = pstmt.executeQuery()) {
 
-            if (rs.next()) {
-                String dbPassword = rs.getString("password");
-                if (BCrypt.checkpw(password, dbPassword)) {
-                    this.uniqueId = rs.getString("uniqueId");
-                    this.name = rs.getString("name");
-                    this.phoneNumber = rs.getString("phoneNumber");
-                    this.password = dbPassword;
+                if (rs.next()) {
+                    String dbPassword = rs.getString("password");
+                    if (BCrypt.checkpw(password, dbPassword)) {
+                        this.uniqueId = rs.getString("uniqueId");
+                        this.name = rs.getString("name");
+                        this.phoneNumber = rs.getString("phoneNumber");
+                        this.password = dbPassword;
 
-                    String instructorQuery = "SELECT * FROM Instructors WHERE uniqueId = ?";
-                    PreparedStatement instructorPstmt = conn.prepareStatement(instructorQuery);
-                    instructorPstmt.setString(1, this.uniqueId);
-                    ResultSet instructorRs = instructorPstmt.executeQuery();
+                        String instructorQuery = "SELECT * FROM Instructors WHERE uniqueId = ?";
+                        try (PreparedStatement instructorPstmt = conn.prepareStatement(instructorQuery)) {
+                            instructorPstmt.setString(1, this.uniqueId);
+                            try (ResultSet instructorRs = instructorPstmt.executeQuery()) {
+                                if (instructorRs.next()) {
+                                    this.specialization = new Specialization(instructorRs.getString("specialization"));
+                                    this.availabilities = Availabilities.parseAvailabilities(instructorRs.getString("availabilities"));
+                                }
+                            }
+                        }
 
-                    if (instructorRs.next()) {
-                        this.specialization = new Specialization(instructorRs.getString("specialization"));
-                        this.availabilities = Availabilities.parseAvailabilities(instructorRs.getString("availabilities"));
+                        Session.getInstance(this);
+                        return true;
+                    } else {
+                        System.out.println("Incorrect password.");
                     }
-
-                    Session.getInstance(this);
-                    return true;
+                } else {
+                    System.out.println("Instructor not found with the given phone number.");
                 }
             }
         } catch (SQLException e) {
@@ -130,6 +165,13 @@ public class Instructor extends Users {
         String name = scanner.nextLine();
         System.out.print("Enter your phone number: ");
         String phoneNumber = scanner.nextLine();
+
+        // Check if phoneNumber already exists
+        if (Users.findUserByPhoneNumber(phoneNumber) != null) {
+            System.out.println("Error: Phone number already in use.");
+            return;
+        }
+
         System.out.print("Enter a password: ");
         String password = scanner.nextLine();
         System.out.print("Enter your specialization: ");
@@ -191,19 +233,23 @@ public class Instructor extends Users {
 
     private static void viewAvailableOfferings() {
         System.out.println("Available Offerings:");
+        Instructor instructor = (Instructor) Session.getUser();
         List<Offering> offerings = Schedule.getAllAvailableOfferings();
+
         for (Offering offering : offerings) {
-            System.out.println("ID: " + offering.id + " - " + offering);
+            if (instructor.isAvailableForOffering(offering) && instructor.isOfferingInAvailableCity(offering)) {
+                System.out.println("ID: " + offering.getId() + " - " + offering);
+            }
         }
-    }    
+    }
 
     private static void acceptOffering() {
         System.out.print("Enter the ID of the offering you want to accept: ");
         int id = scanner.nextInt();
         scanner.nextLine();
         Offering offering = Offering.getOfferingById(id);
+        Instructor instructor = (Instructor) Session.getUser();
         if (offering != null) {
-            Instructor instructor = (Instructor) Session.getUser();
             if (!instructor.isAvailableForOffering(offering)) {
                 System.out.println("You are not available for this offering due to a schedule conflict.");
                 return;
@@ -212,7 +258,6 @@ public class Instructor extends Users {
                 System.out.println("This offering is not in your available cities.");
                 return;
             }
-            // Removed specialization check
             offering.setInstructor(instructor);
             System.out.println("Offering accepted.");
         } else {
@@ -224,28 +269,27 @@ public class Instructor extends Users {
         System.out.println("Your Accepted Offerings:");
         List<Offering> offerings = Schedule.getOfferingsByInstructor((Instructor) Session.getUser());
         for (Offering offering : offerings) {
-            System.out.println("ID: " + offering.id + " - " + offering);
+            System.out.println("ID: " + offering.getId() + " - " + offering);
         }
     }
-    
 
     public boolean isAvailableForOffering(Offering offering) {
         Connection conn = DBConnection.getConnection();
-        try {
-            String query = "SELECT COUNT(*) FROM Offerings WHERE instructorId = ? AND date = ? AND (" +
-                    "(startTime < ? AND endTime > ?) OR " +
-                    "(startTime >= ? AND startTime < ?))";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+        String query = "SELECT COUNT(*) FROM Offerings WHERE instructorId = ? AND date = ? AND (" +
+                "(startTime < ? AND endTime > ?) OR " +
+                "(startTime >= ? AND startTime < ?))";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, this.uniqueId);
-            pstmt.setString(2, offering.getDate());
-            pstmt.setString(3, offering.getEndTime());
-            pstmt.setString(4, offering.getStartTime());
-            pstmt.setString(5, offering.getStartTime());
-            pstmt.setString(6, offering.getEndTime());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                int count = rs.getInt(1);
-                return count == 0;
+            pstmt.setDate(2, java.sql.Date.valueOf(offering.getDate()));
+            pstmt.setTime(3, java.sql.Time.valueOf(offering.getEndTime() + ":00"));
+            pstmt.setTime(4, java.sql.Time.valueOf(offering.getStartTime() + ":00"));
+            pstmt.setTime(5, java.sql.Time.valueOf(offering.getStartTime() + ":00"));
+            pstmt.setTime(6, java.sql.Time.valueOf(offering.getEndTime() + ":00"));
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt(1);
+                    return count == 0;
+                }
             }
         } catch (SQLException e) {
             System.err.println("Error checking instructor availability.");
@@ -263,36 +307,35 @@ public class Instructor extends Users {
         return false;
     }
 
-    // Removed the isSpecializationMatching method
-
     public static Instructor getInstructorById(String instructorId) {
         Connection conn = DBConnection.getConnection();
 
-        try {
-            String query = "SELECT * FROM Users WHERE uniqueId = ? AND userType = 'Instructor'";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+        String query = "SELECT * FROM Users WHERE uniqueId = ? AND userType = 'Instructor'";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, instructorId);
-            ResultSet rs = pstmt.executeQuery();
+            try (ResultSet rs = pstmt.executeQuery()) {
 
-            if (rs.next()) {
-                String name = rs.getString("name");
-                String phoneNumber = rs.getString("phoneNumber");
-                String password = rs.getString("password");
+                if (rs.next()) {
+                    String name = rs.getString("name");
+                    String phoneNumber = rs.getString("phoneNumber");
+                    String password = rs.getString("password");
 
-                String instructorQuery = "SELECT * FROM Instructors WHERE uniqueId = ?";
-                PreparedStatement instructorPstmt = conn.prepareStatement(instructorQuery);
-                instructorPstmt.setString(1, instructorId);
-                ResultSet instructorRs = instructorPstmt.executeQuery();
+                    String instructorQuery = "SELECT * FROM Instructors WHERE uniqueId = ?";
+                    try (PreparedStatement instructorPstmt = conn.prepareStatement(instructorQuery)) {
+                        instructorPstmt.setString(1, instructorId);
+                        try (ResultSet instructorRs = instructorPstmt.executeQuery()) {
+                            if (instructorRs.next()) {
+                                String specializationStr = instructorRs.getString("specialization");
+                                String availabilitiesStr = instructorRs.getString("availabilities");
+                                Specialization specialization = new Specialization(specializationStr);
+                                Availabilities availabilities = Availabilities.parseAvailabilities(availabilitiesStr);
 
-                if (instructorRs.next()) {
-                    String specializationStr = instructorRs.getString("specialization");
-                    String availabilitiesStr = instructorRs.getString("availabilities");
-                    Specialization specialization = new Specialization(specializationStr);
-                    Availabilities availabilities = Availabilities.parseAvailabilities(availabilitiesStr);
-
-                    Instructor instructor = new Instructor(name, phoneNumber, password, specialization, availabilities);
-                    instructor.uniqueId = instructorId;
-                    return instructor;
+                                Instructor instructor = new Instructor(name, phoneNumber, password, specialization, availabilities);
+                                instructor.uniqueId = instructorId;
+                                return instructor;
+                            }
+                        }
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -305,31 +348,32 @@ public class Instructor extends Users {
     public static Instructor findInstructorByPhoneNumber(String phoneNumber) {
         Connection conn = DBConnection.getConnection();
 
-        try {
-            String query = "SELECT * FROM Users WHERE phoneNumber = ? AND userType = 'Instructor'";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+        String query = "SELECT * FROM Users WHERE phoneNumber = ? AND userType = 'Instructor'";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, phoneNumber);
-            ResultSet rs = pstmt.executeQuery();
+            try (ResultSet rs = pstmt.executeQuery()) {
 
-            if (rs.next()) {
-                String uniqueId = rs.getString("uniqueId");
-                String name = rs.getString("name");
-                String password = rs.getString("password");
+                if (rs.next()) {
+                    String uniqueId = rs.getString("uniqueId");
+                    String name = rs.getString("name");
+                    String password = rs.getString("password");
 
-                String instructorQuery = "SELECT * FROM Instructors WHERE uniqueId = ?";
-                PreparedStatement instructorPstmt = conn.prepareStatement(instructorQuery);
-                instructorPstmt.setString(1, uniqueId);
-                ResultSet instructorRs = instructorPstmt.executeQuery();
+                    String instructorQuery = "SELECT * FROM Instructors WHERE uniqueId = ?";
+                    try (PreparedStatement instructorPstmt = conn.prepareStatement(instructorQuery)) {
+                        instructorPstmt.setString(1, uniqueId);
+                        try (ResultSet instructorRs = instructorPstmt.executeQuery()) {
+                            if (instructorRs.next()) {
+                                String specializationStr = instructorRs.getString("specialization");
+                                String availabilitiesStr = instructorRs.getString("availabilities");
+                                Specialization specialization = new Specialization(specializationStr);
+                                Availabilities availabilities = Availabilities.parseAvailabilities(availabilitiesStr);
 
-                if (instructorRs.next()) {
-                    String specializationStr = instructorRs.getString("specialization");
-                    String availabilitiesStr = instructorRs.getString("availabilities");
-                    Specialization specialization = new Specialization(specializationStr);
-                    Availabilities availabilities = Availabilities.parseAvailabilities(availabilitiesStr);
-
-                    Instructor instructor = new Instructor(name, phoneNumber, password, specialization, availabilities);
-                    instructor.uniqueId = uniqueId;
-                    return instructor;
+                                Instructor instructor = new Instructor(name, phoneNumber, password, specialization, availabilities);
+                                instructor.uniqueId = uniqueId;
+                                return instructor;
+                            }
+                        }
+                    }
                 }
             }
         } catch (SQLException e) {

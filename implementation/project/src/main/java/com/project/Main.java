@@ -32,15 +32,17 @@ public class Main {
                 default -> System.out.println("Invalid choice.");
             }
         } while (choice != 0);
+
+        scanner.close();
     }
 
     public static void main(String[] args) {
         DBInitializer.initialize();
 
-        Admin defaultAdmin = new Admin("Default Admin", "123", "123");
+       /*  Admin defaultAdmin = new Admin("Default Admin", "123", "123");
         if (!defaultAdmin.existsInDB()) {
             defaultAdmin.saveToDB();
-        }
+        }*/
 
         menu();
     }

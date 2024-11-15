@@ -1,4 +1,5 @@
 package com.project;
+
 public class Organization {
     private String name;
     private String address;
@@ -21,7 +22,6 @@ public class Organization {
         return name;
     }
 
-
     public void setName(String name) {
         this.name = name;
     }
@@ -32,5 +32,11 @@ public class Organization {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    // Optionally, you can override toString() for better representation
+    @Override
+    public String toString() {
+        return "Organization{name='" + name + "', address='" + address + "'}";
     }
 }

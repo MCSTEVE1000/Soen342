@@ -5,19 +5,36 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBConnection {
-    private static Connection connection = null;
+    private static Connection conn = null;
 
-    public static synchronized Connection getConnection() {
-        if (connection == null) {
-            try {
-                String url = "jdbc:sqlite:app_database.db";
-                connection = DriverManager.getConnection(url);
-                System.out.println("Connected to SQLite database.");
-            } catch (SQLException e) {
-                System.err.println("Failed to connect to SQLite database.");
-                e.printStackTrace();
-            }
+    public static void connect() {
+        try {
+            // Register JDBC driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+
+            // Database credentials
+            String url = "jdbc:mysql://localhost:3306/project_db?useSSL=false&serverTimezone=UTC";
+            String user = "project_user";
+            String password = "1234";
+
+            // Open a connection
+            conn = DriverManager.getConnection(url, user, password);
+            System.out.println("Connected to MySQL database.");
+        } catch (ClassNotFoundException e) {
+            System.err.println("MySQL JDBC Driver not found.");
+            e.printStackTrace();
+            conn = null;
+        } catch (SQLException e) {
+            System.err.println("Failed to connect to MySQL database.");
+            e.printStackTrace();
+            conn = null;
         }
-        return connection;
+    }
+
+    public static Connection getConnection() {
+        if (conn == null) {
+            connect();
+        }
+        return conn;
     }
 }
