@@ -1,6 +1,9 @@
 # Soen342
 Soen 342 Project
 
+## Video
+https://drive.google.com/file/d/18VZWkTSyEVoHDaoK8DEhN6TwhMN2argD/view?usp=sharing  
+
 ## Team Members
 Section H
 
