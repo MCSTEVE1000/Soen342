@@ -59,11 +59,19 @@ public class Instructor extends Users {
         Connection conn = DBConnection.getConnection();
 
         try {
+            // Update offerings assigned to this instructor
+            String updateOfferings = "UPDATE Offerings SET instructorId = NULL, visible = 0 WHERE instructorId = ?";
+            PreparedStatement pstmtOfferings = conn.prepareStatement(updateOfferings);
+            pstmtOfferings.setString(1, this.uniqueId);
+            pstmtOfferings.executeUpdate();
+
+            // Delete instructor record
             String deleteInstructor = "DELETE FROM Instructors WHERE uniqueId = ?";
             PreparedStatement pstmtInstructor = conn.prepareStatement(deleteInstructor);
             pstmtInstructor.setString(1, this.uniqueId);
             pstmtInstructor.executeUpdate();
 
+            // Delete user record
             String deleteUser = "DELETE FROM Users WHERE uniqueId = ?";
             PreparedStatement pstmtUser = conn.prepareStatement(deleteUser);
             pstmtUser.setString(1, this.uniqueId);
@@ -183,11 +191,11 @@ public class Instructor extends Users {
 
     private static void viewAvailableOfferings() {
         System.out.println("Available Offerings:");
-        List<Offering> offerings = Schedule.getOfferingsForInstructor((Instructor) Session.getUser());
-        for (int i = 0; i < offerings.size(); i++) {
-            System.out.println(offerings.get(i));
+        List<Offering> offerings = Schedule.getAllAvailableOfferings();
+        for (Offering offering : offerings) {
+            System.out.println("ID: " + offering.id + " - " + offering);
         }
-    }
+    }    
 
     private static void acceptOffering() {
         System.out.print("Enter the ID of the offering you want to accept: ");
@@ -195,7 +203,17 @@ public class Instructor extends Users {
         scanner.nextLine();
         Offering offering = Offering.getOfferingById(id);
         if (offering != null) {
-            offering.setInstructor((Instructor) Session.getUser());
+            Instructor instructor = (Instructor) Session.getUser();
+            if (!instructor.isAvailableForOffering(offering)) {
+                System.out.println("You are not available for this offering due to a schedule conflict.");
+                return;
+            }
+            if (!instructor.isOfferingInAvailableCity(offering)) {
+                System.out.println("This offering is not in your available cities.");
+                return;
+            }
+            // Removed specialization check
+            offering.setInstructor(instructor);
             System.out.println("Offering accepted.");
         } else {
             System.out.println("Invalid offering ID.");
@@ -206,9 +224,46 @@ public class Instructor extends Users {
         System.out.println("Your Accepted Offerings:");
         List<Offering> offerings = Schedule.getOfferingsByInstructor((Instructor) Session.getUser());
         for (Offering offering : offerings) {
-            System.out.println(offering);
+            System.out.println("ID: " + offering.id + " - " + offering);
         }
     }
+    
+
+    public boolean isAvailableForOffering(Offering offering) {
+        Connection conn = DBConnection.getConnection();
+        try {
+            String query = "SELECT COUNT(*) FROM Offerings WHERE instructorId = ? AND date = ? AND (" +
+                    "(startTime < ? AND endTime > ?) OR " +
+                    "(startTime >= ? AND startTime < ?))";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, this.uniqueId);
+            pstmt.setString(2, offering.getDate());
+            pstmt.setString(3, offering.getEndTime());
+            pstmt.setString(4, offering.getStartTime());
+            pstmt.setString(5, offering.getStartTime());
+            pstmt.setString(6, offering.getEndTime());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                return count == 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking instructor availability.");
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean isOfferingInAvailableCity(Offering offering) {
+        for (City city : this.availabilities.cities) {
+            if (offering.getLocation().getCity().getName().equalsIgnoreCase(city.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Removed the isSpecializationMatching method
 
     public static Instructor getInstructorById(String instructorId) {
         Connection conn = DBConnection.getConnection();

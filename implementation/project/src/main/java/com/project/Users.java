@@ -5,6 +5,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class Users {
     protected String name;
@@ -33,15 +35,36 @@ public abstract class Users {
         return BCrypt.checkpw(plainPassword, this.password);
     }
 
-    public String getName() { return name; }
-    public String getUniqueId() { return uniqueId; }
-    public String getPhoneNumber() { return phoneNumber; }
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = hashPassword(password); }
+    public String getName() {
+        return name;
+    }
+
+    public String getUniqueId() {
+        return uniqueId;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getUserType() {
+        return userType;
+    } // Added getter for userType
+
+    public void setPassword(String password) {
+        this.password = hashPassword(password);
+    }
 
     public abstract boolean login(String identifier, String password);
+
     public abstract boolean register();
+
     public abstract boolean saveToDB();
+
     public abstract boolean deleteFromDB();
 
     public static Users findUserByPhoneNumber(String phoneNumber) {
@@ -78,6 +101,43 @@ public abstract class Users {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static List<Users> getAllUsers() {
+        Connection conn = DBConnection.getConnection();
+        List<Users> usersList = new ArrayList<>();
+        try {
+            String query = "SELECT * FROM Users WHERE userType != 'Admin'";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String userType = rs.getString("userType");
+                String uniqueId = rs.getString("uniqueId");
+                String name = rs.getString("name");
+                String phoneNumber = rs.getString("phoneNumber");
+                String password = rs.getString("password");
+
+                Users user = null;
+                switch (userType) {
+                    case "Client":
+                        user = Client.findClientByPhoneNumber(phoneNumber);
+                        break;
+                    case "Instructor":
+                        user = Instructor.findInstructorByPhoneNumber(phoneNumber);
+                        break;
+                    default:
+                        break;
+                }
+                if (user != null) {
+                    usersList.add(user);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving all users.");
+            e.printStackTrace();
+        }
+        return usersList;
     }
 
     public boolean existsInDB() {

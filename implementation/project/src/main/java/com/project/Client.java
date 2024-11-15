@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
 import org.mindrot.jbcrypt.BCrypt;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Client extends Users {
     private static Scanner scanner = new Scanner(System.in);
@@ -19,8 +21,13 @@ public class Client extends Users {
         this.guardianId = guardianId;
     }
 
-    public boolean isUnderage() { return isUnderage; }
-    public String getGuardianId() { return guardianId; }
+    public boolean isUnderage() {
+        return isUnderage;
+    }
+
+    public String getGuardianId() {
+        return guardianId;
+    }
 
     @Override
     public boolean register() {
@@ -32,6 +39,12 @@ public class Client extends Users {
         Connection conn = DBConnection.getConnection();
 
         try {
+            // Check if phoneNumber already exists in Users table
+            if (Users.findUserByPhoneNumber(this.phoneNumber) != null) {
+                System.out.println("Error: Phone number already in use.");
+                return false;
+            }
+
             String insertUser = "INSERT INTO Users(uniqueId, name, phoneNumber, password, userType) VALUES(?, ?, ?, ?, ?)";
             PreparedStatement pstmtUser = conn.prepareStatement(insertUser);
             pstmtUser.setString(1, this.uniqueId);
@@ -124,6 +137,13 @@ public class Client extends Users {
         String name = scanner.nextLine();
         System.out.print("Enter your phone number: ");
         String phoneNumber = scanner.nextLine();
+
+        // Check if phoneNumber already exists
+        if (Users.findUserByPhoneNumber(phoneNumber) != null) {
+            System.out.println("Error: Phone number already in use.");
+            return;
+        }
+
         System.out.print("Enter a password: ");
         String password = scanner.nextLine();
         System.out.print("Are you underage? (yes/no): ");
@@ -136,22 +156,30 @@ public class Client extends Users {
             System.out.print("Enter guardian's phone number: ");
             String guardianPhone = scanner.nextLine();
 
-            Client guardian = findClientByPhoneNumber(guardianPhone);
-            if (guardian == null) {
+            // Check if guardian's phone number is already in use
+            Users guardianUser = Users.findUserByPhoneNumber(guardianPhone);
+            if (guardianUser != null) {
+                guardianId = guardianUser.getUniqueId();
+            } else {
                 System.out.print("Enter guardian's name: ");
                 String guardianName = scanner.nextLine();
+
+                // Check if guardian's phone number is already in use before registration
+                if (Users.findUserByPhoneNumber(guardianPhone) != null) {
+                    System.out.println("Error: Guardian's phone number already in use.");
+                    return;
+                }
+
                 System.out.print("Enter guardian's password: ");
                 String guardianPassword = scanner.nextLine();
 
-                guardian = new Client(guardianName, guardianPhone, guardianPassword, false, null);
+                Client guardian = new Client(guardianName, guardianPhone, guardianPassword, false, null);
                 if (guardian.register()) {
                     guardianId = guardian.getUniqueId();
                 } else {
                     System.out.println("Failed to register guardian.");
                     return;
                 }
-            } else {
-                guardianId = guardian.getUniqueId();
             }
         }
 
@@ -214,24 +242,93 @@ public class Client extends Users {
         return null;
     }
 
+    static Client findClientById(String uniqueId) {
+        Connection conn = DBConnection.getConnection();
+
+        try {
+            String query = "SELECT * FROM Users WHERE uniqueId = ? AND userType = 'Client'";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, uniqueId);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                String name = rs.getString("name");
+                String phoneNumber = rs.getString("phoneNumber");
+                String password = rs.getString("password");
+
+                String clientQuery = "SELECT * FROM Clients WHERE uniqueId = ?";
+                PreparedStatement clientPstmt = conn.prepareStatement(clientQuery);
+                clientPstmt.setString(1, uniqueId);
+                ResultSet clientRs = clientPstmt.executeQuery();
+
+                if (clientRs.next()) {
+                    boolean isUnderage = clientRs.getInt("isUnderage") == 1;
+                    String guardianId = clientRs.getString("guardianId");
+
+                    Client client = new Client(name, phoneNumber, password, isUnderage, guardianId);
+                    client.uniqueId = uniqueId;
+                    return client;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error finding client by ID.");
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     private static void clientMenu(Client client) {
         int choice;
         do {
             System.out.println("\nClient Menu:");
             System.out.println("0. Logout");
             System.out.println("1. View Available Offerings");
-            System.out.println("2. Make a Booking");
-            System.out.println("3. View Your Bookings");
-            System.out.println("4. Cancel a Booking");
+
+            // Check if the client is a guardian
+            if (isGuardian(client)) {
+                System.out.println("2. Make a Booking for Your Ward");
+                System.out.println("3. View Your Ward's Bookings");
+                System.out.println("4. Cancel a Booking for Your Ward");
+            } else if (!client.isUnderage()) {
+                System.out.println("2. Make a Booking");
+                System.out.println("3. View Your Bookings");
+                System.out.println("4. Cancel a Booking");
+            } else {
+                System.out.println("Note: As an underage client, your guardian handles bookings on your behalf.");
+            }
             System.out.print("Enter your choice: ");
             choice = scanner.nextInt();
             scanner.nextLine();
 
             switch (choice) {
                 case 1 -> Schedule.viewPublicOfferings();
-                case 2 -> Booking.makeBooking(client);
-                case 3 -> Booking.viewClientBookings(client);
-                case 4 -> Booking.cancelBooking(client);
+                case 2 -> {
+                    if (isGuardian(client)) {
+                        Booking.makeBookingForWard(client);
+                    } else if (!client.isUnderage()) {
+                        Booking.makeBooking(client);
+                    } else {
+                        System.out.println("You cannot make bookings as an underage client.");
+                    }
+                }
+                case 3 -> {
+                    if (isGuardian(client)) {
+                        Booking.viewWardBookings(client);
+                    } else if (!client.isUnderage()) {
+                        Booking.viewClientBookings(client);
+                    } else {
+                        System.out.println("You cannot view bookings as an underage client.");
+                    }
+                }
+                case 4 -> {
+                    if (isGuardian(client)) {
+                        Booking.cancelWardBooking(client);
+                    } else if (!client.isUnderage()) {
+                        Booking.cancelBooking(client);
+                    } else {
+                        System.out.println("You cannot cancel bookings as an underage client.");
+                    }
+                }
                 case 0 -> {
                     System.out.println("Logging out...");
                     Session.clearSession();
@@ -239,5 +336,24 @@ public class Client extends Users {
                 default -> System.out.println("Invalid choice.");
             }
         } while (choice != 0);
+    }
+
+    // Helper method to check if the client is a guardian
+    private static boolean isGuardian(Client client) {
+        Connection conn = DBConnection.getConnection();
+        try {
+            String query = "SELECT COUNT(*) FROM Clients WHERE guardianId = ?";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, client.getUniqueId());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                return count > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking if client is a guardian.");
+            e.printStackTrace();
+        }
+        return false;
     }
 }

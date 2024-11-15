@@ -48,7 +48,8 @@ public class DBInitializer {
                     "offeringName TEXT," +
                     "instructorId TEXT," +
                     "available INTEGER," +
-                    "visible INTEGER" +
+                    "visible INTEGER," +
+                    "enrolled INTEGER" + // Added enrolled field
                     ");";
             stmt.execute(createOfferingsTable);
 

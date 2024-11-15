@@ -13,14 +13,37 @@ public class Location {
         this.room = room;
     }
 
-    public String getRoom() { return room; }
-    public void setRoom(String room) { this.room = room; }
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
-    public City getCity() { return city; }
-    public void setCity(City city) { this.city = city; }
-    public String getOrganization() { return organization; }
-    public void setOrganization(String organization) { this.organization = organization; }
+    public String getRoom() {
+        return room;
+    }
+
+    public void setRoom(String room) {
+        this.room = room;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public City getCity() {
+        return city;
+    }
+
+    public void setCity(City city) {
+        this.city = city;
+    }
+
+    public String getOrganization() {
+        return organization;
+    }
+
+    public void setOrganization(String organization) {
+        this.organization = organization;
+    }
 
     @Override
     public String toString() {
