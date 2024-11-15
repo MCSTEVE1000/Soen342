@@ -13,8 +13,8 @@ public class Offering {
     private boolean available;
     private boolean isGroup;
     private boolean visible = false;
-    private int capacity; // Total capacity
-    private int enrolled = 0; // Number of enrolled clients
+    private int capacity;
+    private int enrolled = 0; 
     private Instructor instructor;
     private String instructorId;
     private String date;
@@ -32,7 +32,7 @@ public class Offering {
         this.date = date;
         this.offeringName = offeringName;
         this.available = true;
-        this.enrolled = 0; // Initialize enrolled to zero
+        this.enrolled = 0; 
     }
 
     public int getId() {
@@ -135,7 +135,7 @@ public class Offering {
             pstmt.setString(8, instructorId);
             pstmt.setInt(9, available ? 1 : 0);
             pstmt.setInt(10, visible ? 1 : 0);
-            pstmt.setInt(11, enrolled); // Save enrolled count
+            pstmt.setInt(11, enrolled); 
             pstmt.executeUpdate();
 
             try (ResultSet rs = pstmt.getGeneratedKeys()) {
@@ -160,8 +160,8 @@ public class Offering {
             pstmt.setString(1, instructorId);
             pstmt.setInt(2, available ? 1 : 0);
             pstmt.setInt(3, visible ? 1 : 0);
-            pstmt.setInt(4, capacity); // Update capacity
-            pstmt.setInt(5, enrolled); // Update enrolled count
+            pstmt.setInt(4, capacity); 
+            pstmt.setInt(5, enrolled); 
             pstmt.setInt(6, id);
             pstmt.executeUpdate();
 
@@ -205,7 +205,7 @@ public class Offering {
                     offering.endTime = rs.getTime("endTime").toString().substring(0, 5);
                     offering.isGroup = rs.getInt("isGroup") == 1;
                     offering.capacity = rs.getInt("capacity");
-                    offering.enrolled = rs.getInt("enrolled"); // Retrieve enrolled count
+                    offering.enrolled = rs.getInt("enrolled"); 
                     offering.date = rs.getDate("date").toString();
                     offering.offeringName = rs.getString("offeringName");
                     offering.instructorId = rs.getString("instructorId");
@@ -232,7 +232,7 @@ public class Offering {
         String availability = available ? "Available" : "Not Available";
         String instructorName = (instructor != null) ? instructor.getName() : "TBD";
         String cityName = location.getCity().getName();
-        int spotsLeft = capacity - enrolled; // Calculate spots left
+        int spotsLeft = capacity - enrolled; 
         return String.format("%s %s Class with %s on %s from %s to %s at %s in %s (%s) - Spots Available: %d",
                 groupType, offeringName, instructorName, date, startTime, endTime,
                 location.getOrganization(), cityName, availability, spotsLeft);

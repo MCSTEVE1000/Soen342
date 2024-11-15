@@ -9,15 +9,15 @@ public class DBConnection {
 
     public static void connect() {
         try {
-            // Register JDBC driver
+            
             Class.forName("com.mysql.cj.jdbc.Driver");
 
-            // Database credentials
+           
             String url = "jdbc:mysql://localhost:3306/project_db?useSSL=false&serverTimezone=UTC";
             String user = "project_user";
             String password = "1234";
 
-            // Open a connection
+            
             conn = DriverManager.getConnection(url, user, password);
             System.out.println("Connected to MySQL database.");
         } catch (ClassNotFoundException e) {

@@ -53,7 +53,7 @@ public abstract class Users {
 
     public String getUserType() {
         return userType;
-    } // Added getter for userType
+    } 
 
     public void setPassword(String password) {
         this.password = hashPassword(password);

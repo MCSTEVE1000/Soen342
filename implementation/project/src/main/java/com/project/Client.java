@@ -39,7 +39,7 @@ public class Client extends Users {
         Connection conn = DBConnection.getConnection();
 
         try {
-            // Check if phoneNumber already exists in Users table
+            
             if (Users.findUserByPhoneNumber(this.phoneNumber) != null) {
                 System.out.println("Error: Phone number already in use.");
                 return false;
@@ -147,7 +147,7 @@ public class Client extends Users {
         System.out.print("Enter your phone number: ");
         String phoneNumber = scanner.nextLine();
 
-        // Check if phoneNumber already exists
+        
         if (Users.findUserByPhoneNumber(phoneNumber) != null) {
             System.out.println("Error: Phone number already in use.");
             return;
@@ -165,7 +165,7 @@ public class Client extends Users {
             System.out.print("Enter guardian's phone number: ");
             String guardianPhone = scanner.nextLine();
 
-            // Check if guardian's phone number is already in use
+           
             Users guardianUser = Users.findUserByPhoneNumber(guardianPhone);
             if (guardianUser != null) {
                 guardianId = guardianUser.getUniqueId();
@@ -173,7 +173,7 @@ public class Client extends Users {
                 System.out.print("Enter guardian's name: ");
                 String guardianName = scanner.nextLine();
 
-                // Check if guardian's phone number is already in use before registration
+                
                 if (Users.findUserByPhoneNumber(guardianPhone) != null) {
                     System.out.println("Error: Guardian's phone number already in use.");
                     return;
@@ -295,7 +295,7 @@ public class Client extends Users {
             System.out.println("0. Logout");
             System.out.println("1. View Available Offerings");
 
-            // Check if the client is a guardian
+           
             if (isGuardian(client)) {
                 System.out.println("2. Make a Booking for Your Ward");
                 System.out.println("3. View Your Ward's Bookings");
@@ -349,7 +349,7 @@ public class Client extends Users {
         } while (choice != 0);
     }
 
-    // Helper method to check if the client is a guardian
+    
     private static boolean isGuardian(Client client) {
         Connection conn = DBConnection.getConnection();
         String query = "SELECT COUNT(*) FROM Clients WHERE guardianId = ?";
