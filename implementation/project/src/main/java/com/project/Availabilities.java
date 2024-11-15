@@ -8,6 +8,9 @@ public class Availabilities {
     }
 
     public static Availabilities parseAvailabilities(String availabilities) {
+        if (availabilities == null || availabilities.trim().isEmpty()) {
+            return new Availabilities(new City[0]);
+        }
         String[] availabilitiesArray = availabilities.split(",");
         City[] cities = new City[availabilitiesArray.length];
         for (int i = 0; i < availabilitiesArray.length; i++) {

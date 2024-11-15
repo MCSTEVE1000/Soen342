@@ -70,30 +70,29 @@ public abstract class Users {
     public static Users findUserByPhoneNumber(String phoneNumber) {
         Connection conn = DBConnection.getConnection();
 
-        try {
-            String query = "SELECT * FROM Users WHERE phoneNumber = ?";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+        String query = "SELECT * FROM Users WHERE phoneNumber = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, phoneNumber);
-            ResultSet rs = pstmt.executeQuery();
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    String userType = rs.getString("userType");
+                    String uniqueId = rs.getString("uniqueId");
+                    String name = rs.getString("name");
+                    String password = rs.getString("password");
 
-            if (rs.next()) {
-                String userType = rs.getString("userType");
-                String uniqueId = rs.getString("uniqueId");
-                String name = rs.getString("name");
-                String password = rs.getString("password");
-
-                switch (userType) {
-                    case "Admin":
-                        Admin admin = new Admin(name, phoneNumber, null);
-                        admin.uniqueId = uniqueId;
-                        admin.password = password;
-                        return admin;
-                    case "Client":
-                        return Client.findClientByPhoneNumber(phoneNumber);
-                    case "Instructor":
-                        return Instructor.findInstructorByPhoneNumber(phoneNumber);
-                    default:
-                        return null;
+                    switch (userType) {
+                        case "Admin":
+                            Admin admin = new Admin(name, phoneNumber, null);
+                            admin.uniqueId = uniqueId;
+                            admin.password = password;
+                            return admin;
+                        case "Client":
+                            return Client.findClientByPhoneNumber(phoneNumber);
+                        case "Instructor":
+                            return Instructor.findInstructorByPhoneNumber(phoneNumber);
+                        default:
+                            return null;
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -106,11 +105,9 @@ public abstract class Users {
     public static List<Users> getAllUsers() {
         Connection conn = DBConnection.getConnection();
         List<Users> usersList = new ArrayList<>();
-        try {
-            String query = "SELECT * FROM Users WHERE userType != 'Admin'";
-            PreparedStatement pstmt = conn.prepareStatement(query);
-            ResultSet rs = pstmt.executeQuery();
-
+        String query = "SELECT * FROM Users WHERE userType != 'Admin'";
+        try (PreparedStatement pstmt = conn.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
                 String userType = rs.getString("userType");
                 String uniqueId = rs.getString("uniqueId");
@@ -143,13 +140,12 @@ public abstract class Users {
     public boolean existsInDB() {
         Connection conn = DBConnection.getConnection();
 
-        try {
-            String query = "SELECT * FROM Users WHERE uniqueId = ?";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+        String query = "SELECT * FROM Users WHERE uniqueId = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, this.uniqueId);
-            ResultSet rs = pstmt.executeQuery();
-
-            return rs.next();
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next();
+            }
         } catch (SQLException e) {
             System.err.println("Error checking user existence in database.");
             e.printStackTrace();

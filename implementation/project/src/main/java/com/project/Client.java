@@ -6,11 +6,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
 import org.mindrot.jbcrypt.BCrypt;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
 
 public class Client extends Users {
-    private static Scanner scanner = new Scanner(System.in);
+    private static final Scanner scanner = new Scanner(System.in);
 
     private boolean isUnderage;
     private String guardianId;
@@ -46,20 +46,22 @@ public class Client extends Users {
             }
 
             String insertUser = "INSERT INTO Users(uniqueId, name, phoneNumber, password, userType) VALUES(?, ?, ?, ?, ?)";
-            PreparedStatement pstmtUser = conn.prepareStatement(insertUser);
-            pstmtUser.setString(1, this.uniqueId);
-            pstmtUser.setString(2, this.name);
-            pstmtUser.setString(3, this.phoneNumber);
-            pstmtUser.setString(4, this.password);
-            pstmtUser.setString(5, this.userType);
-            pstmtUser.executeUpdate();
+            try (PreparedStatement pstmtUser = conn.prepareStatement(insertUser)) {
+                pstmtUser.setString(1, this.uniqueId);
+                pstmtUser.setString(2, this.name);
+                pstmtUser.setString(3, this.phoneNumber);
+                pstmtUser.setString(4, this.password);
+                pstmtUser.setString(5, this.userType);
+                pstmtUser.executeUpdate();
+            }
 
             String insertClient = "INSERT INTO Clients(uniqueId, isUnderage, guardianId) VALUES(?, ?, ?)";
-            PreparedStatement pstmtClient = conn.prepareStatement(insertClient);
-            pstmtClient.setString(1, this.uniqueId);
-            pstmtClient.setInt(2, this.isUnderage ? 1 : 0);
-            pstmtClient.setString(3, this.guardianId);
-            pstmtClient.executeUpdate();
+            try (PreparedStatement pstmtClient = conn.prepareStatement(insertClient)) {
+                pstmtClient.setString(1, this.uniqueId);
+                pstmtClient.setInt(2, this.isUnderage ? 1 : 0);
+                pstmtClient.setString(3, this.guardianId);
+                pstmtClient.executeUpdate();
+            }
 
             return true;
         } catch (SQLException e) {
@@ -75,14 +77,16 @@ public class Client extends Users {
 
         try {
             String deleteClient = "DELETE FROM Clients WHERE uniqueId = ?";
-            PreparedStatement pstmtClient = conn.prepareStatement(deleteClient);
-            pstmtClient.setString(1, this.uniqueId);
-            pstmtClient.executeUpdate();
+            try (PreparedStatement pstmtClient = conn.prepareStatement(deleteClient)) {
+                pstmtClient.setString(1, this.uniqueId);
+                pstmtClient.executeUpdate();
+            }
 
             String deleteUser = "DELETE FROM Users WHERE uniqueId = ?";
-            PreparedStatement pstmtUser = conn.prepareStatement(deleteUser);
-            pstmtUser.setString(1, this.uniqueId);
-            pstmtUser.executeUpdate();
+            try (PreparedStatement pstmtUser = conn.prepareStatement(deleteUser)) {
+                pstmtUser.setString(1, this.uniqueId);
+                pstmtUser.executeUpdate();
+            }
 
             return true;
         } catch (SQLException e) {
@@ -96,32 +100,37 @@ public class Client extends Users {
     public boolean login(String identifier, String password) {
         Connection conn = DBConnection.getConnection();
 
-        try {
-            String query = "SELECT * FROM Users WHERE phoneNumber = ? AND userType = 'Client'";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+        String query = "SELECT * FROM Users WHERE phoneNumber = ? AND userType = 'Client'";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, identifier);
-            ResultSet rs = pstmt.executeQuery();
+            try (ResultSet rs = pstmt.executeQuery()) {
 
-            if (rs.next()) {
-                String dbPassword = rs.getString("password");
-                if (BCrypt.checkpw(password, dbPassword)) {
-                    this.uniqueId = rs.getString("uniqueId");
-                    this.name = rs.getString("name");
-                    this.phoneNumber = rs.getString("phoneNumber");
-                    this.password = dbPassword;
+                if (rs.next()) {
+                    String dbPassword = rs.getString("password");
+                    if (BCrypt.checkpw(password, dbPassword)) {
+                        this.uniqueId = rs.getString("uniqueId");
+                        this.name = rs.getString("name");
+                        this.phoneNumber = rs.getString("phoneNumber");
+                        this.password = dbPassword;
 
-                    String clientQuery = "SELECT * FROM Clients WHERE uniqueId = ?";
-                    PreparedStatement clientPstmt = conn.prepareStatement(clientQuery);
-                    clientPstmt.setString(1, this.uniqueId);
-                    ResultSet clientRs = clientPstmt.executeQuery();
+                        String clientQuery = "SELECT * FROM Clients WHERE uniqueId = ?";
+                        try (PreparedStatement clientPstmt = conn.prepareStatement(clientQuery)) {
+                            clientPstmt.setString(1, this.uniqueId);
+                            try (ResultSet clientRs = clientPstmt.executeQuery()) {
+                                if (clientRs.next()) {
+                                    this.isUnderage = clientRs.getInt("isUnderage") == 1;
+                                    this.guardianId = clientRs.getString("guardianId");
+                                }
+                            }
+                        }
 
-                    if (clientRs.next()) {
-                        this.isUnderage = clientRs.getInt("isUnderage") == 1;
-                        this.guardianId = clientRs.getString("guardianId");
+                        Session.getInstance(this);
+                        return true;
+                    } else {
+                        System.out.println("Incorrect password.");
                     }
-
-                    Session.getInstance(this);
-                    return true;
+                } else {
+                    System.out.println("Client not found with the given phone number.");
                 }
             }
         } catch (SQLException e) {
@@ -210,29 +219,30 @@ public class Client extends Users {
     static Client findClientByPhoneNumber(String phoneNumber) {
         Connection conn = DBConnection.getConnection();
 
-        try {
-            String query = "SELECT * FROM Users WHERE phoneNumber = ? AND userType = 'Client'";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+        String query = "SELECT * FROM Users WHERE phoneNumber = ? AND userType = 'Client'";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, phoneNumber);
-            ResultSet rs = pstmt.executeQuery();
+            try (ResultSet rs = pstmt.executeQuery()) {
 
-            if (rs.next()) {
-                String uniqueId = rs.getString("uniqueId");
-                String name = rs.getString("name");
-                String password = rs.getString("password");
+                if (rs.next()) {
+                    String uniqueId = rs.getString("uniqueId");
+                    String name = rs.getString("name");
+                    String password = rs.getString("password");
 
-                String clientQuery = "SELECT * FROM Clients WHERE uniqueId = ?";
-                PreparedStatement clientPstmt = conn.prepareStatement(clientQuery);
-                clientPstmt.setString(1, uniqueId);
-                ResultSet clientRs = clientPstmt.executeQuery();
+                    String clientQuery = "SELECT * FROM Clients WHERE uniqueId = ?";
+                    try (PreparedStatement clientPstmt = conn.prepareStatement(clientQuery)) {
+                        clientPstmt.setString(1, uniqueId);
+                        try (ResultSet clientRs = clientPstmt.executeQuery()) {
+                            if (clientRs.next()) {
+                                boolean isUnderage = clientRs.getInt("isUnderage") == 1;
+                                String guardianId = clientRs.getString("guardianId");
 
-                if (clientRs.next()) {
-                    boolean isUnderage = clientRs.getInt("isUnderage") == 1;
-                    String guardianId = clientRs.getString("guardianId");
-
-                    Client client = new Client(name, phoneNumber, password, isUnderage, guardianId);
-                    client.uniqueId = uniqueId;
-                    return client;
+                                Client client = new Client(name, phoneNumber, password, isUnderage, guardianId);
+                                client.uniqueId = uniqueId;
+                                return client;
+                            }
+                        }
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -245,29 +255,30 @@ public class Client extends Users {
     static Client findClientById(String uniqueId) {
         Connection conn = DBConnection.getConnection();
 
-        try {
-            String query = "SELECT * FROM Users WHERE uniqueId = ? AND userType = 'Client'";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+        String query = "SELECT * FROM Users WHERE uniqueId = ? AND userType = 'Client'";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, uniqueId);
-            ResultSet rs = pstmt.executeQuery();
+            try (ResultSet rs = pstmt.executeQuery()) {
 
-            if (rs.next()) {
-                String name = rs.getString("name");
-                String phoneNumber = rs.getString("phoneNumber");
-                String password = rs.getString("password");
+                if (rs.next()) {
+                    String name = rs.getString("name");
+                    String phoneNumber = rs.getString("phoneNumber");
+                    String password = rs.getString("password");
 
-                String clientQuery = "SELECT * FROM Clients WHERE uniqueId = ?";
-                PreparedStatement clientPstmt = conn.prepareStatement(clientQuery);
-                clientPstmt.setString(1, uniqueId);
-                ResultSet clientRs = clientPstmt.executeQuery();
+                    String clientQuery = "SELECT * FROM Clients WHERE uniqueId = ?";
+                    try (PreparedStatement clientPstmt = conn.prepareStatement(clientQuery)) {
+                        clientPstmt.setString(1, uniqueId);
+                        try (ResultSet clientRs = clientPstmt.executeQuery()) {
+                            if (clientRs.next()) {
+                                boolean isUnderage = clientRs.getInt("isUnderage") == 1;
+                                String guardianId = clientRs.getString("guardianId");
 
-                if (clientRs.next()) {
-                    boolean isUnderage = clientRs.getInt("isUnderage") == 1;
-                    String guardianId = clientRs.getString("guardianId");
-
-                    Client client = new Client(name, phoneNumber, password, isUnderage, guardianId);
-                    client.uniqueId = uniqueId;
-                    return client;
+                                Client client = new Client(name, phoneNumber, password, isUnderage, guardianId);
+                                client.uniqueId = uniqueId;
+                                return client;
+                            }
+                        }
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -341,14 +352,14 @@ public class Client extends Users {
     // Helper method to check if the client is a guardian
     private static boolean isGuardian(Client client) {
         Connection conn = DBConnection.getConnection();
-        try {
-            String query = "SELECT COUNT(*) FROM Clients WHERE guardianId = ?";
-            PreparedStatement pstmt = conn.prepareStatement(query);
+        String query = "SELECT COUNT(*) FROM Clients WHERE guardianId = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, client.getUniqueId());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                int count = rs.getInt(1);
-                return count > 0;
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt(1);
+                    return count > 0;
+                }
             }
         } catch (SQLException e) {
             System.err.println("Error checking if client is a guardian.");
